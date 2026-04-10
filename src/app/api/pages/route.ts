@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { Prisma } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -124,7 +125,7 @@ export async function POST(request: NextRequest) {
       title: body.title || "Untitled",
       icon: body.icon || "📄",
       parentId: body.parentId || null,
-      content: body.content || null,
+      content: body.content ? (body.content as Prisma.InputJsonValue) : Prisma.JsonNull,
       workspaceId,
       userId,
       sortOrder,
@@ -178,10 +179,15 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Page not found" }, { status: 404 });
   }
 
-  const { id, ...updateData } = body;
+  const { id, content, ...rest } = body;
+  const data: Record<string, unknown> = { ...rest };
+  if (content !== undefined) {
+    data.content = content as Prisma.InputJsonValue;
+  }
+
   const page = await prisma.page.update({
     where: { id },
-    data: updateData as Record<string, unknown>,
+    data,
   });
 
   return NextResponse.json(page);

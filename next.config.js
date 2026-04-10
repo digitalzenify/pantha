@@ -2,9 +2,7 @@
 const nextConfig = {
   output: "standalone",
   reactStrictMode: true,
-  experimental: {
-    serverComponentsExternalPackages: ["@prisma/client", "bcryptjs"],
-  },
+  serverExternalPackages: ["@prisma/client", "bcryptjs"],
 };
 
 module.exports = nextConfig;

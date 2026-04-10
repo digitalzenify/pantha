@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "@/styles/globals.css";
 import { Providers } from "./providers";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Pantha — AI-Powered Life Assistant",
@@ -16,7 +13,7 @@ export const metadata: Metadata = {
 
 /**
  * Root layout wrapping the entire application.
- * Includes font loading, theme provider, and session provider.
+ * Includes theme provider and session provider.
  */
 export default function RootLayout({
   children,
@@ -25,7 +22,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className="font-sans antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

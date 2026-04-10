@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { BlockNoteEditor, PartialBlock } from "@blocknote/core";
+import React, { useCallback, useState } from "react";
+import { PartialBlock } from "@blocknote/core";
+import { useCreateBlockNote } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/mantine";
-import "@blocknote/core/fonts/inter.css";
+import "@blocknote/core/style.css";
 import "@blocknote/mantine/style.css";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,40 +40,31 @@ export default function BlockEditor({
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [saveTimer, setSaveTimer] = useState<NodeJS.Timeout | null>(null);
 
-  // Create the BlockNote editor instance
-  const editor = useMemo(() => {
-    return BlockNoteEditor.create({
-      initialContent: initialContent && initialContent.length > 0
+  // Create the BlockNote editor instance using the recommended hook
+  const editor = useCreateBlockNote({
+    initialContent:
+      initialContent && initialContent.length > 0
         ? initialContent
         : undefined,
-    });
-  }, [initialContent]);
+  });
 
-  // Debounced auto-save
-  useEffect(() => {
+  // Handle content change with debounce (1 second auto-save)
+  const handleChange = useCallback(() => {
     if (!onChange) return;
 
-    const handler = setTimeout(() => {
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+    }
+
+    const timer = setTimeout(() => {
       const content = editor.document;
       onChange(content as PartialBlock[]);
     }, 1000);
 
-    return () => clearTimeout(handler);
-  }, [editor, onChange]);
-
-  // Handle content change with debounce
-  const handleChange = useCallback(() => {
-    if (!onChange) return;
-
-    const content = editor.document;
-    // Use a timeout for debouncing
-    const timer = setTimeout(() => {
-      onChange(content as PartialBlock[]);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [editor, onChange]);
+    setSaveTimer(timer);
+  }, [editor, onChange, saveTimer]);
 
   // Export as Markdown
   const handleExportMarkdown = useCallback(async () => {
@@ -122,7 +114,7 @@ export default function BlockEditor({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt: aiPrompt,
-          context: markdown.slice(0, 2000), // Limit context size
+          context: markdown.slice(0, 2000),
         }),
       });
 
@@ -234,7 +226,10 @@ export default function BlockEditor({
             >
               Cancel
             </Button>
-            <Button onClick={handleAskAI} disabled={aiLoading || !aiPrompt.trim()}>
+            <Button
+              onClick={handleAskAI}
+              disabled={aiLoading || !aiPrompt.trim()}
+            >
               {aiLoading ? "Thinking..." : "Send"}
             </Button>
           </DialogFooter>

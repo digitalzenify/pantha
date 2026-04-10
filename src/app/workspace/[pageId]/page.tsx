@@ -33,84 +33,21 @@ export default function PageEditorView() {
   useEffect(() => {
     async function fetchPage() {
       try {
-        const response = await fetch(`/api/pages?id=${pageId}`);
-        if (response.ok) {
-          const pages = await response.json();
-          // The API returns a list, find our page
-          // If a flat list, it won't contain the page directly—we fetch all and filter
-          // Better approach: use a dedicated get endpoint
-          // For now, fetch all pages and find by ID
-          const allPages = await fetch("/api/pages?includeDeleted=false");
-          if (allPages.ok) {
-            const data = await allPages.json();
-            const found = findPageById(data, pageId);
-            if (found) {
-              setPage(found);
-              setTitle(found.title || "Untitled");
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch page:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    // Fetch the specific page via a PATCH-less approach
-    // Actually, let's fetch the page content directly
-    async function fetchPageDirect() {
-      try {
-        // We'll get all pages and find the right one; for MVP this works
-        // A proper GET by ID endpoint can be added later
-        const response = await fetch("/api/pages");
-        if (response.ok) {
-          const pages = await response.json();
-          const found = findPageInTree(pages, pageId);
-          if (found) {
-            // Fetch full page with content via a separate call
-            // For now, the list includes what we need except content
-            // Let's use a more targeted approach
-          }
-        }
-
-        // Fetch all pages from API (they include content in the response)
-        // Since our API doesn't return content in list, let's add a workaround
-        // We'll fetch the specific page by making a PATCH with no changes
-        // Better: just fetch and get it via GET with filtering
-        // For MVP, store/load content via direct prisma or add query param
-        // Let's fetch it via the pages route with a specific approach
-        const directResponse = await fetch(`/api/pages?pageId=${pageId}`);
-        if (directResponse.ok) {
-          const data = await directResponse.json();
-          // data is an array — not ideal. Let's handle it properly.
-        }
-      } catch (error) {
-        console.error("Failed to fetch page:", error);
-      }
-    }
-
-    fetchPageById();
-
-    async function fetchPageById() {
-      try {
         setLoading(true);
-        // Use a custom fetch that gets page content by ID
         const response = await fetch(`/api/pages/${pageId}`);
         if (response.ok) {
           const data = await response.json();
           setPage(data);
           setTitle(data.title || "Untitled");
-        } else {
-          // Fallback: try list endpoint
-          console.warn("Direct page fetch failed, page may not exist");
         }
-      } catch {
-        console.warn("Page fetch endpoint not available");
+      } catch (error) {
+        console.error("Failed to fetch page:", error);
       } finally {
         setLoading(false);
       }
     }
+
+    fetchPage();
   }, [pageId]);
 
   // Save title with debounce
@@ -216,27 +153,4 @@ export default function PageEditorView() {
       </div>
     </div>
   );
-}
-
-/** Helper to find a page in a nested tree structure */
-function findPageById(pages: PageData[], id: string): PageData | null {
-  for (const page of pages) {
-    if (page.id === id) return page;
-  }
-  return null;
-}
-
-/** Helper to find a page in the tree (including children) */
-function findPageInTree(
-  pages: Array<PageData & { children?: PageData[] }>,
-  id: string
-): PageData | null {
-  for (const page of pages) {
-    if (page.id === id) return page;
-    if (page.children) {
-      const found = findPageInTree(page.children, id);
-      if (found) return found;
-    }
-  }
-  return null;
 }
