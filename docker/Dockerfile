@@ -52,9 +52,13 @@ RUN chown nextjs:nodejs .next
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma client
+# Copy Prisma client and CLI (CLI is needed to run `prisma migrate deploy` at startup)
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+
+# Copy Prisma config (provides datasource.url to the CLI at runtime)
+COPY --from=builder /app/prisma.config.ts ./
 
 USER nextjs
 
