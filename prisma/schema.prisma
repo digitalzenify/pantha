@@ -1,0 +1,76 @@
+// Pantha — Prisma Schema
+// Database models for the workspace application
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String    @unique
+  hashedPassword String?
+  image          String?
+  role           Role      @default(USER)
+  aiProvider     String?   // "openai" | "anthropic" | "groq" | "ollama"
+  aiApiKey       String?   // Encrypted API key for the user's chosen LLM provider
+  aiBaseUrl      String?   // Custom base URL (e.g. for Ollama)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  workspaces     Workspace[]
+  pages          Page[]
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String   @default("My Workspace")
+  icon      String?  @default("📋")
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pages Page[]
+
+  @@index([userId])
+}
+
+model Page {
+  id          String    @id @default(cuid())
+  title       String    @default("Untitled")
+  content     Json?     // BlockNote JSON content
+  icon        String?   @default("📄")
+  coverImage  String?
+  isDeleted   Boolean   @default(false)
+  isFavorite  Boolean   @default(false)
+  sortOrder   Int       @default(0)
+
+  // Relations
+  parentId    String?
+  parent      Page?     @relation("PageToSubPages", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Page[]    @relation("PageToSubPages")
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([workspaceId])
+  @@index([userId])
+  @@index([parentId])
+}
+
+enum Role {
+  ADMIN
+  USER
+}
